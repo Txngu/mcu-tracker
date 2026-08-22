@@ -8,10 +8,18 @@
   "use strict";
 
   /* ------------------------------------------------------------ STATE -- */
-  const STORAGE_KEY = "chronovault:v1";
+  // Guest progress and each signed-in account's progress are kept in
+  // separate localStorage slots so signing out always restores whatever
+  // guest-mode data existed before you signed in — it's never overwritten
+  // by a logged-in account's data.
+  const GUEST_STORAGE_KEY = "chronovault:guest:v1";
+  function userStorageKey(uid) {
+    return `chronovault:user:${uid}`;
+  }
 
   let state = {
     entries: [],                 // working copy of MCU_DATA (mutable)
+    activeStorageKey: GUEST_STORAGE_KEY, // which localStorage slot is currently live
     view: "home",
     search: "",
     typeFilter: "all",
@@ -29,15 +37,21 @@
   };
 
   /* ---------------------------------------------------------- PERSIST -- */
-  function loadState() {
+  function readStorageSlot(key) {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const saved = JSON.parse(raw);
-      Object.assign(state, saved, { entries: [] }); // entries rebuilt from data file
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
     } catch (e) {
-      console.warn("Could not load saved state:", e);
+      console.warn("Could not read storage slot:", key, e);
+      return null;
     }
+  }
+
+  // Loads whichever slot is currently active (state.activeStorageKey) into
+  // top-level state fields. Used once at startup, before we know auth status.
+  function loadState() {
+    const saved = readStorageSlot(state.activeStorageKey);
+    if (saved) Object.assign(state, saved, { entries: [], activeStorageKey: state.activeStorageKey });
   }
 
   function saveState() {
@@ -55,7 +69,7 @@
         watched: state.watched,
         unlockedAchievements: state.unlockedAchievements
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+      localStorage.setItem(state.activeStorageKey, JSON.stringify(toSave));
       if (window.CV_AUTH && window.CV_AUTH.isCloudEnabled() && window.CV_AUTH.getUser()) {
         window.CV_AUTH.saveCloudData(toSave);
       }
@@ -905,20 +919,50 @@
         unwatchedOnly: state.unwatchedOnly, theme: state.theme, favorites: state.favorites,
         watched: state.watched, unlockedAchievements: state.unlockedAchievements
       };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+      localStorage.setItem(state.activeStorageKey, JSON.stringify(toSave));
     } catch (e) { /* ignore */ }
+  }
+
+  // Switch back to guest-mode data (whatever was on this device before any
+  // account was signed into) — used on sign-out so a logged-in account's
+  // progress never leaks into or overwrites guest mode.
+  function switchToGuestStorage() {
+    state.activeStorageKey = GUEST_STORAGE_KEY;
+    const saved = readStorageSlot(GUEST_STORAGE_KEY) || {};
+    state.favorites = saved.favorites || {};
+    state.watched = saved.watched || {};
+    state.unlockedAchievements = saved.unlockedAchievements || {};
+    if (saved.theme) state.theme = saved.theme;
+    if (saved.sort) state.sort = saved.sort;
+    buildWorkingEntries();
+    applyTheme();
+    renderAll();
+    renderAchievements();
   }
 
   async function handleAuthSuccess(user) {
     updateAuthButton(user);
     renderAuthModalState(user);
-    if (!user) return;
+
+    if (!user) {
+      switchToGuestStorage();
+      closeAuthModal();
+      return;
+    }
+
+    // Switch to this account's own storage slot *before* fetching cloud
+    // data, so nothing gets written into guest storage or another
+    // account's slot in the meantime.
+    state.activeStorageKey = userStorageKey(user.uid);
+
     try {
       const cloudData = await window.CV_AUTH.loadCloudData();
       if (cloudData) {
         applyCloudSnapshot(cloudData);
       } else {
-        // First time signing in on any device — push current local progress up.
+        // First time this account has ever signed in anywhere — treat
+        // whatever was in guest mode on this device as its starting
+        // progress and push it up.
         saveState();
       }
     } catch (e) {
