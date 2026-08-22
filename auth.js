@@ -92,16 +92,34 @@ window.CV_AUTH = (function () {
     return docSnap.exists ? docSnap.data() : null;
   }
 
-  let saveTimer = null;
+  // Writes immediately (no debounce) so a quick refresh right after a
+  // change — e.g. toggling "watched" and then reloading the page a moment
+  // later — can never lose that write to a cancelled timer.
   function saveCloudData(data) {
     if (!cloudEnabled || !currentUser) return;
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      db.collection("users").doc(currentUser.uid).set({
-        ...data,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true }).catch((e) => console.warn("Cloud save failed:", e));
-    }, 700);
+    db.collection("users").doc(currentUser.uid).set({
+      ...data,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).catch((e) => console.warn("Cloud save failed:", e));
+  }
+
+  // Real-time sync: keeps every open device's copy up to date automatically
+  // whenever any device (including this one) writes a change, without
+  // needing a manual refresh.
+  let unsubscribeSnapshot = null;
+  function subscribeToUserDoc(uid, callback) {
+    if (!cloudEnabled) return;
+    if (unsubscribeSnapshot) unsubscribeSnapshot();
+    unsubscribeSnapshot = db.collection("users").doc(uid).onSnapshot(
+      (docSnap) => callback(docSnap.exists ? docSnap.data() : null),
+      (err) => console.warn("Cloud sync listener error:", err)
+    );
+  }
+  function unsubscribeUserDoc() {
+    if (unsubscribeSnapshot) {
+      unsubscribeSnapshot();
+      unsubscribeSnapshot = null;
+    }
   }
 
   init();
@@ -115,6 +133,8 @@ window.CV_AUTH = (function () {
     signOut: signOutUser,
     resetPassword,
     loadCloudData,
-    saveCloudData
+    saveCloudData,
+    subscribeToUserDoc,
+    unsubscribeUserDoc
   };
 })();

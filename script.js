@@ -940,34 +940,35 @@
     renderAchievements();
   }
 
-  async function handleAuthSuccess(user) {
+  function handleAuthSuccess(user) {
     updateAuthButton(user);
     renderAuthModalState(user);
 
     if (!user) {
+      if (window.CV_AUTH) window.CV_AUTH.unsubscribeUserDoc();
       switchToGuestStorage();
       closeAuthModal();
       return;
     }
 
-    // Switch to this account's own storage slot *before* fetching cloud
-    // data, so nothing gets written into guest storage or another
-    // account's slot in the meantime.
+    // Switch to this account's own storage slot *before* the first cloud
+    // snapshot arrives, so nothing gets written into guest storage or
+    // another account's slot in the meantime.
     state.activeStorageKey = userStorageKey(user.uid);
 
-    try {
-      const cloudData = await window.CV_AUTH.loadCloudData();
+    let firstSnapshot = true;
+    window.CV_AUTH.subscribeToUserDoc(user.uid, (cloudData) => {
       if (cloudData) {
         applyCloudSnapshot(cloudData);
-      } else {
+      } else if (firstSnapshot) {
         // First time this account has ever signed in anywhere — treat
         // whatever was in guest mode on this device as its starting
         // progress and push it up.
         saveState();
       }
-    } catch (e) {
-      console.warn("Could not load cloud data:", e);
-    }
+      firstSnapshot = false;
+    });
+
     closeAuthModal();
   }
 
