@@ -1,7 +1,8 @@
-/* Minimal offline-first service worker: caches the app shell on install and
-   serves it from cache first, falling back to network. */
+/* Network-first service worker: always tries the network first so edited
+   files (like firebase-config.js) show up on a normal refresh, and only
+   falls back to the cached copy when the network is unavailable (offline). */
 
-const CACHE_NAME = "chronovault-cache-v1";
+const CACHE_NAME = "chronovault-cache-v2"; // bumped to purge the old cache-first version
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -32,13 +33,12 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
+    fetch(event.request)
+      .then((response) => {
         const clone = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         return response;
-      }).catch(() => cached);
-    })
+      })
+      .catch(() => caches.match(event.request))
   );
 });
