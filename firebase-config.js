@@ -14,10 +14,11 @@
    ========================================================================== */
 
 const firebaseConfig = {
-  apiKey: "REPLACE_WITH_YOUR_API_KEY",
-  authDomain: "REPLACE_WITH_YOUR_PROJECT.firebaseapp.com",
-  projectId: "REPLACE_WITH_YOUR_PROJECT_ID",
-  storageBucket: "REPLACE_WITH_YOUR_PROJECT.appspot.com",
-  messagingSenderId: "REPLACE_WITH_YOUR_SENDER_ID",
-  appId: "REPLACE_WITH_YOUR_APP_ID"
+  apiKey: "AIzaSyA2PZ4OU6cpltnxED9tQRWHzD44A5kBT5M",
+  authDomain: "chronovault-4ad0e.firebaseapp.com",
+  projectId: "chronovault-4ad0e",
+  storageBucket: "chronovault-4ad0e.firebasestorage.app",
+  messagingSenderId: "220094874981",
+  appId: "1:220094874981:web:4378bb62345e7f60fa8d8c",
+  measurementId: "G-6YF4N9YD96"
 };
