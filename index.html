@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chronovault — MCU Watch Tracker</title>
+<meta name="description" content="Track every Marvel Cinematic Universe release, in order, with progress, stats and achievements." />
+<meta name="theme-color" content="#0a0a0c" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="data:," />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===================== SPLASH SCREEN ===================== -->
+  <div id="splash" class="splash">
+    <div class="splash-inner">
+      <div class="splash-mark">
+        <svg viewBox="0 0 100 100" class="splash-ring">
+          <circle cx="50" cy="50" r="42" class="splash-ring-track"></circle>
+          <circle cx="50" cy="50" r="42" class="splash-ring-fill"></circle>
+        </svg>
+        <span class="splash-glyph">CV</span>
+      </div>
+      <h1 class="splash-title">CHRONOVAULT</h1>
+      <p class="splash-sub">Assembling the timeline…</p>
+    </div>
+  </div>
+
+  <!-- ===================== TOAST / ACHIEVEMENT POPUP ===================== -->
+  <div id="achievementPopup" class="achievement-popup" aria-live="polite"></div>
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="app-header">
+    <div class="header-left">
+      <button id="navHome" class="brand" title="Home">
+        <span class="brand-mark">CV</span>
+        <span class="brand-name">CHRONO<em>VAULT</em></span>
+      </button>
+    </div>
+
+    <nav class="header-nav">
+      <button class="nav-btn active" data-view="home">Collection</button>
+      <button class="nav-btn" data-view="timeline">Timeline</button>
+      <button class="nav-btn" data-view="stats">Statistics</button>
+      <button class="nav-btn" data-view="achievements">Achievements</button>
+    </nav>
+
+    <div class="header-right">
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 5L20.49 19l-5-5zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg>
+        <input id="searchInput" type="text" placeholder="Search titles, sagas, phases…" autocomplete="off" />
+      </div>
+      <button id="authBtn" class="btn btn-ghost auth-btn" title="Sign in to sync across devices">
+        <span id="authBtnLabel">Sign In</span>
+      </button>
+      <button id="settingsBtn" class="icon-btn" title="Settings">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19.14 12.94a7.14 7.14 0 0 0 .06-.94 7.14 7.14 0 0 0-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.65l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54A.5.5 0 0 0 14 2h-4a.5.5 0 0 0-.5.42l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.61 8.48a.5.5 0 0 0 .12.65l2.03 1.58c-.04.31-.06.62-.06.94s.02.63.06.94l-2.03 1.58a.5.5 0 0 0-.12.65l1.92 3.32c.14.24.42.33.6.22l2.39-.96c.49.38 1.03.7 1.62.94l.36 2.54c.05.28.28.42.5.42h4c.24 0 .46-.14.5-.42l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.24.1.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.65zM12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===================== MOBILE BOTTOM NAV ===================== -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="nav-btn bottom-nav-btn active" data-view="home">
+      <span class="icon">🏠</span><span>Home</span>
+    </button>
+    <button class="nav-btn bottom-nav-btn" data-view="timeline">
+      <span class="icon">📽️</span><span>Timeline</span>
+    </button>
+    <button class="nav-btn bottom-nav-btn" data-view="stats">
+      <span class="icon">📊</span><span>Stats</span>
+    </button>
+    <button class="nav-btn bottom-nav-btn" data-view="achievements">
+      <span class="icon">🏆</span><span>Awards</span>
+    </button>
+  </nav>
+
+  <main id="app">
+
+    <!-- ===================== HOME VIEW ===================== -->
+    <section id="view-home" class="view active-view">
+
+      <div class="dashboard glass">
+        <div class="ring-block">
+          <svg viewBox="0 0 140 140" class="progress-ring">
+            <circle cx="70" cy="70" r="60" class="ring-track"/>
+            <g id="stoneSegments"></g>
+          </svg>
+          <div class="ring-center">
+            <span id="progressPercent" class="ring-percent">0%</span>
+            <span class="ring-label">Complete</span>
+          </div>
+        </div>
+
+        <div class="dash-stats">
+          <div class="dash-stat">
+            <span class="dash-stat-value" id="statWatched">0</span>
+            <span class="dash-stat-label">Watched</span>
+          </div>
+          <div class="dash-stat">
+            <span class="dash-stat-value" id="statRemaining">0</span>
+            <span class="dash-stat-label">Remaining</span>
+          </div>
+          <div class="dash-stat">
+            <span class="dash-stat-value" id="statHoursWatched">0h</span>
+            <span class="dash-stat-label">Hours Watched</span>
+          </div>
+          <div class="dash-stat">
+            <span class="dash-stat-value" id="statHoursRemaining">0h</span>
+            <span class="dash-stat-label">Hours Left</span>
+          </div>
+        </div>
+
+        <div class="dash-next">
+          <span class="dash-next-label">Next up</span>
+          <div id="nextUpCard" class="dash-next-card">All caught up!</div>
+          <div class="dash-next-actions">
+            <button id="randomBtn" class="btn btn-ghost">🎲 Surprise Me</button>
+            <button id="tonightBtn" class="btn btn-primary">🍿 Watch Tonight</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="toolbar glass">
+        <div class="filter-row" id="typeFilters">
+          <button class="chip active" data-filter-type="all">All</button>
+          <button class="chip" data-filter-type="Movie">Movies</button>
+          <button class="chip" data-filter-type="Disney+ Series">Disney+</button>
+          <button class="chip" data-filter-type="Netflix Series">Netflix</button>
+          <button class="chip" data-filter-type="Animated">Animated</button>
+          <button class="chip" data-filter-type="Special">Specials</button>
+          <button class="chip" data-filter-type="One-Shot">One-Shots</button>
+          <button class="chip" data-filter-type="Upcoming">Upcoming</button>
+        </div>
+
+        <div class="toolbar-row2">
+          <select id="phaseFilter" class="select">
+            <option value="all">All Phases</option>
+          </select>
+          <select id="sagaFilter" class="select">
+            <option value="all">All Sagas</option>
+          </select>
+          <select id="sortSelect" class="select">
+            <option value="chronological">Sort: Chronological</option>
+            <option value="release">Sort: Release Date</option>
+            <option value="alphabetical">Sort: Alphabetical</option>
+            <option value="runtime">Sort: Runtime</option>
+          </select>
+          <button id="watchedOnlyToggle" class="chip" data-active="false">Unwatched only</button>
+
+          <div class="view-toggle">
+            <button id="gridViewBtn" class="icon-btn active" title="Grid view">▦</button>
+            <button id="listViewBtn" class="icon-btn" title="List view">☰</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="resultsMeta" class="results-meta"></div>
+      <div id="cardGrid" class="card-grid"></div>
+      <div id="emptyState" class="empty-state" hidden>
+        <p>No entries match your filters.</p>
+        <button id="clearFiltersBtn" class="btn btn-ghost">Clear filters</button>
+      </div>
+    </section>
+
+    <!-- ===================== TIMELINE VIEW ===================== -->
+    <section id="view-timeline" class="view">
+      <h2 class="view-title">Chronological Timeline</h2>
+      <p class="view-sub">The saga in the order events actually happen, not release order.</p>
+      <div id="timelineTrack" class="timeline-track"></div>
+    </section>
+
+    <!-- ===================== STATS VIEW ===================== -->
+    <section id="view-stats" class="view">
+      <h2 class="view-title">Statistics</h2>
+
+      <div class="stats-grid">
+        <div class="stat-card glass"><span class="stat-num" id="s-total">0</span><span class="stat-label">Total Entries</span></div>
+        <div class="stat-card glass"><span class="stat-num" id="s-movies">0</span><span class="stat-label">Movies Watched</span></div>
+        <div class="stat-card glass"><span class="stat-num" id="s-series">0</span><span class="stat-label">Series Watched</span></div>
+        <div class="stat-card glass"><span class="stat-num" id="s-hours-watched">0</span><span class="stat-label">Hours Watched</span></div>
+        <div class="stat-card glass"><span class="stat-num" id="s-hours-remaining">0</span><span class="stat-label">Hours Remaining</span></div>
+        <div class="stat-card glass"><span class="stat-num" id="s-completion">0%</span><span class="stat-label">Completion</span></div>
+        <div class="stat-card glass"><span class="stat-num" id="s-favorites">0</span><span class="stat-label">Favorites</span></div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card glass">
+          <h3>By Phase</h3>
+          <canvas id="phaseChart" width="320" height="320"></canvas>
+          <div id="phaseLegend" class="legend"></div>
+        </div>
+        <div class="chart-card glass">
+          <h3>By Saga</h3>
+          <canvas id="sagaChart" width="320" height="320"></canvas>
+          <div id="sagaLegend" class="legend"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ACHIEVEMENTS VIEW ===================== -->
+    <section id="view-achievements" class="view">
+      <h2 class="view-title">Achievements</h2>
+      <p class="view-sub">Unlock badges as you make your way through the saga.</p>
+      <div id="achievementsGrid" class="achievements-grid"></div>
+    </section>
+
+  </main>
+
+  <!-- ===================== ENTRY MODAL ===================== -->
+  <div id="modalOverlay" class="modal-overlay">
+    <div class="modal glass" role="dialog" aria-modal="true">
+      <button id="modalClose" class="modal-close" aria-label="Close">✕</button>
+      <div class="modal-body">
+        <div class="modal-poster" id="modalPoster"></div>
+        <div class="modal-info">
+          <span class="modal-type" id="modalType"></span>
+          <h2 id="modalTitle" class="modal-title"></h2>
+          <div class="modal-meta">
+            <span id="modalPhase"></span>
+            <span class="dot">•</span>
+            <span id="modalSaga"></span>
+            <span class="dot">•</span>
+            <span id="modalRuntime"></span>
+          </div>
+          <p class="modal-date" id="modalDate"></p>
+          <p class="modal-desc" id="modalDesc"></p>
+          <div class="modal-actions">
+            <button id="modalWatchedBtn" class="btn btn-primary">Mark Watched</button>
+            <button id="modalFavBtn" class="btn btn-ghost">☆ Favorite</button>
+          </div>
+          <div class="modal-nav">
+            <button id="modalPrev" class="btn btn-ghost">← Previous</button>
+            <button id="modalNext" class="btn btn-ghost">Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== AUTH MODAL ===================== -->
+  <div id="authOverlay" class="modal-overlay">
+    <div class="modal glass auth-modal" role="dialog" aria-modal="true">
+      <button id="authClose" class="modal-close" aria-label="Close">✕</button>
+
+      <div id="authSignedOut">
+        <div class="segmented auth-tabs">
+          <button class="seg-btn auth-tab active" data-tab="signin">Sign In</button>
+          <button class="seg-btn auth-tab" data-tab="signup">Sign Up</button>
+        </div>
+
+        <p class="auth-hint" id="authCloudHint"></p>
+
+        <form id="authForm" class="auth-form">
+          <label class="auth-label">Email
+            <input type="email" id="authEmail" required autocomplete="email" />
+          </label>
+          <label class="auth-label">Password
+            <input type="password" id="authPassword" required autocomplete="current-password" minlength="6" />
+          </label>
+          <p id="authError" class="auth-error" hidden></p>
+          <button type="submit" id="authSubmit" class="btn btn-primary auth-submit">Sign In</button>
+        </form>
+
+        <button id="authForgot" class="btn btn-ghost auth-forgot">Forgot password?</button>
+        <p class="auth-guest-note">You can keep using the app without an account — your progress just stays on this device.</p>
+      </div>
+
+      <div id="authSignedIn" hidden>
+        <h2 class="modal-title">Signed In</h2>
+        <p class="auth-hint" id="authUserEmail"></p>
+        <p class="auth-guest-note">Your watched, favorites and achievements now sync automatically across every device you sign into.</p>
+        <button id="authSignOutBtn" class="btn btn-danger">Sign Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SETTINGS PANEL ===================== -->
+  <div id="settingsOverlay" class="modal-overlay">
+    <div class="modal glass settings-modal" role="dialog" aria-modal="true">
+      <button id="settingsClose" class="modal-close" aria-label="Close">✕</button>
+      <h2 class="modal-title">Settings</h2>
+
+      <div class="settings-section">
+        <h3>Appearance</h3>
+        <div class="settings-row">
+          <span>Theme</span>
+          <div class="segmented">
+            <button class="seg-btn" data-theme="dark">Dark</button>
+            <button class="seg-btn" data-theme="light">Light</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Data</h3>
+        <div class="settings-row">
+          <span>Export your progress</span>
+          <button id="exportBtn" class="btn btn-ghost">Export JSON</button>
+        </div>
+        <div class="settings-row">
+          <span>Import a backup</span>
+          <label class="btn btn-ghost file-btn">
+            Import JSON
+            <input type="file" id="importInput" accept="application/json" hidden />
+          </label>
+        </div>
+        <div class="settings-row">
+          <span>Reset all progress</span>
+          <button id="resetBtn" class="btn btn-danger">Reset</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Keyboard Shortcuts</h3>
+        <ul class="shortcuts-list">
+          <li><kbd>/</kbd> Focus search</li>
+          <li><kbd>G</kbd> Grid view</li>
+          <li><kbd>L</kbd> List view</li>
+          <li><kbd>R</kbd> Random project</li>
+          <li><kbd>Esc</kbd> Close dialogs</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== CONFETTI CANVAS ===================== -->
+  <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
+
+  <!-- Firebase (optional cloud sync). If firebase-config.js still has
+       placeholder values, or these fail to load, the app runs in guest
+       mode automatically — nothing breaks either way. -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="auth.js"></script>
+
+  <script src="mcu-data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
